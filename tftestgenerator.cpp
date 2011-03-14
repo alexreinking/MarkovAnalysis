@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 #include "tftestgenerator.h"
 using namespace std;
 
@@ -101,53 +102,35 @@ void TFTestGenerator::addState(State *state)
 
 TFState* TFTestGenerator::getNextState(QVector<TFState *> previous)
 {
-//    int prob_a, prob_b, prob_s, prob_e;
     int counts[] = {0,0,0,0};
-//    prob_a = prob_b = prob_s = prob_e = 0;
     int lastIndex = 0;
     while((lastIndex = indexInData(previous,lastIndex)) != -1)
     {
         if(lastIndex+previous.size() < data.size()) {
             TFState* next = data.at(lastIndex+previous.size());
             counts[next->get()]++;
-//            switch(next->get())
-//            {
-//            case TFState::StartSymbol:
-//                prob_s++;
-//                break;
-//            case TFState::EndSymbol:
-//                prob_e++;
-//                break;
-//            case TFState::True:
-//                prob_a++;
-//                break;
-//            case TFState::False:
-//                prob_b++;
-//                break;
-//            default:
-//                break;
-//            }
         } else {
             break;
         }
         lastIndex++;
     }
-    //This is a terrible unrolled loop. :
-//    double pa,pb,pe,ps;
-//    pa = (double)prob_a/double(prob_a+prob_b+prob_e+prob_s);
-//    pb = (double)prob_b/double(prob_a+prob_b+prob_e+prob_s);
-//    pe = (double)prob_e/double(prob_a+prob_b+prob_e+prob_s);
-//    ps = (double)prob_s/double(prob_a+prob_b+prob_e+prob_s);
-//    double r = RAND_DOUBLE;
-//    if(r < pa)
-//        return new TFState(TFState::True);
-//    else if(r < pb+pa)
-//        return new TFState(TFState::False);
-//    else if(r < pe+pb+pa)
-//        return new TFState(TFState::EndSymbol);
-//    else if(r < ps+pb+pa+pe)
-//        return new TFState(TFState::StartSymbol);
-    return new TFState(TFState::None);
+    double magnitude = counts[0]+counts[1]+counts[2]+counts[3];
+    double probs[4];
+    for(int i = 0; i < 4; i++) {
+        probs[i] = double(counts[i])/magnitude;
+        if(i > 0) {
+            probs[i] += probs[i-1];
+        }
+    }
+    double r = RAND_DOUBLE;
+    TFState::AnswerType t = TFState::None;
+    for(int i = 0; i < 4; i++) {
+        if(r < probs[i]) {
+            t = static_cast<TFState::AnswerType>(i);
+            break;
+        }
+    }
+    return new TFState(t);
 }
 
 int TFTestGenerator::indexInData(QVector<TFState *> term, int start)
