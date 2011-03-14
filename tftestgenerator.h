@@ -27,7 +27,9 @@ private:
     int indexInData(QVector<TFState*> term, int start = 0);
     QString statesToString(QVector<TFState *> terms);
 
-    inline void addNextState(QVector<TFState *> &terms, QVector<TFState *> &previous);
+    inline bool addNextState(QVector<TFState *> &terms, QVector<TFState *> &previous);
+    inline void initialize(QVector<TFState *> &terms, int connectivity);
+    inline void freeMem(QVector<TFState *> &terms);
 };
 
 #endif // TFTESTGENERATOR_H

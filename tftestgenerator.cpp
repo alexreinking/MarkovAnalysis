@@ -31,20 +31,16 @@ QVector<State*> TFTestGenerator::getOutputOfLength(int length, int connectivity)
 
     //Initialize.
     QVector<TFState*> ret;
-    if(ignoreMetaSymbols) {
-        TFState* init = ((RAND_DOUBLE < 0.5) ? new TFState(TFState::True) : new TFState(TFState::False));
-        ret << init;
-    } else
-        ret << new TFState(TFState::StartSymbol);
-    for(int i = 1; i < connectivity; i++) {
-        ret << getNextState(ret);
-    }
+    initialize(ret,connectivity);
 
     //Start generating.
     do
     {
         QVector<TFState*> previous = ret.mid(ret.size()-connectivity);
-        addNextState(ret,previous);
+        while(!addNextState(ret,previous)) { //Some thing went wrong. We've hit an impossible string.
+            initialize(ret,connectivity);    //Solution: just start over.
+            previous = ret.mid(ret.size()-connectivity);
+        }
 
         if(ret.size() == length && ignoreMetaSymbols) //In this case, we're done.
             break;
@@ -54,24 +50,6 @@ QVector<State*> TFTestGenerator::getOutputOfLength(int length, int connectivity)
             else
                 ret.remove(ret.size()-1); //Make sure we end above the /length/ variable. Length specifies a minium when we consider those symbols.
         }
-
-        if(ret.last()->get() == TFState::None) { //Crap. Try again.
-            cout << "Crap." << endl;
-            while(ret.size()) {
-                delete ret.first();
-                ret.remove(0,1);
-            }
-            TFState* init = 0;
-            if(ignoreMetaSymbols)
-                init = ((RAND_DOUBLE < 0.5) ? new TFState(TFState::True) : new TFState(TFState::False));
-            else
-                init = new TFState(TFState::StartSymbol);
-            ret << init;
-
-            for(int i = 1; i < connectivity; i++) {
-                addNextState(ret,previous);
-            }
-        }
     } while(true);
     QVector<State*> real_ret;
     foreach(TFState* t, ret)
@@ -79,17 +57,40 @@ QVector<State*> TFTestGenerator::getOutputOfLength(int length, int connectivity)
     return real_ret;
 }
 
-void TFTestGenerator::addNextState(QVector<TFState *> &terms, QVector<TFState *> &previous)
+void TFTestGenerator::initialize(QVector<TFState *> &terms, int connectivity)
+{
+    freeMem(terms);
+    TFState* init = new TFState(TFState::StartSymbol);
+    if(ignoreMetaSymbols)
+        init = ((RAND_DOUBLE < 0.5) ? new TFState(TFState::True) : new TFState(TFState::False));
+    terms << init;
+    for(int i = 1; i < connectivity; i++) {
+        addNextState(terms,terms);
+    }
+}
+
+void TFTestGenerator::freeMem(QVector<TFState *> &terms)
+{
+    foreach(TFState* t, terms)
+        delete t;
+    terms.clear();
+}
+
+bool TFTestGenerator::addNextState(QVector<TFState *> &terms, QVector<TFState *> &previous)
 {
     TFState* nextState = 0;
+    int tries = 0;
     do {
+        tries++;
         nextState = getNextState(previous);
         if(ignoreMetaSymbols) {
             if(nextState->get() == TFState::StartSymbol || nextState->get() == TFState::EndSymbol)
                 continue;
         }
+        if(tries > 10) return false;
     } while(nextState->get() == TFState::None);
     terms << nextState;
+    return true;
 }
 
 void TFTestGenerator::addState(State *state)
