@@ -15,4 +15,15 @@ CONFIG   -= app_bundle
 TEMPLATE = app
 
 
-SOURCES += main.cpp
+SOURCES += main.cpp \
+    tftestgenerator.cpp \
+    tfstate.cpp \
+    tfreader.cpp
+
+HEADERS += \
+    MarkovGenerator.h \
+    State.h \
+    StateReader.h \
+    tftestgenerator.h \
+    tfstate.h \
+    tfreader.h
