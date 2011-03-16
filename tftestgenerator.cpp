@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cmath>
 #include "tftestgenerator.h"
+#include "randomgenerator.h"
 using namespace std;
 
 TFTestGenerator::TFTestGenerator()
@@ -48,7 +49,7 @@ QVector<State*> TFTestGenerator::getOutputOfLength(int length, int connectivity)
             if(ret.size() >= length)
                 break;
             else
-                ret.remove(ret.size()-1); //Make sure we end above the /length/ variable. Length specifies a minium when we consider those symbols.
+                ret.remove(ret.size()-1); //Make sure we end above the /length/ variable. Length specifies a minium when we consider meta symbols.
         }
     } while(true);
     QVector<State*> real_ret;
@@ -62,7 +63,7 @@ void TFTestGenerator::initialize(QVector<TFState *> &terms, int connectivity)
     freeMem(terms);
     TFState* init = new TFState(TFState::StartSymbol);
     if(ignoreMetaSymbols)
-        init = ((RAND_DOUBLE < 0.5) ? new TFState(TFState::True) : new TFState(TFState::False));
+        init = ((RandomGenerator::instance()->getNormalizedDouble() < 0.5) ? new TFState(TFState::True) : new TFState(TFState::False));
     terms << init;
     for(int i = 1; i < connectivity; i++) {
         addNextState(terms,terms);
@@ -81,11 +82,14 @@ bool TFTestGenerator::addNextState(QVector<TFState *> &terms, QVector<TFState *>
     TFState* nextState = 0;
     int tries = 0;
     do {
+        tryagain:
         tries++;
         nextState = getNextState(previous);
         if(ignoreMetaSymbols) {
-            if(nextState->get() == TFState::StartSymbol || nextState->get() == TFState::EndSymbol)
-                continue;
+            if(nextState->get() == TFState::StartSymbol || nextState->get() == TFState::EndSymbol) {
+                delete nextState;
+                goto tryagain; //continue breaks things. this works. fuck off.
+            }
         }
         if(tries > 10) return false;
     } while(nextState->get() == TFState::None);
@@ -123,7 +127,7 @@ TFState* TFTestGenerator::getNextState(QVector<TFState *> previous)
             probs[i] += probs[i-1];
         }
     }
-    double r = RAND_DOUBLE;
+    double r = RandomGenerator::instance()->getNormalizedDouble();
     TFState::AnswerType t = TFState::None;
     for(int i = 0; i < 4; i++) {
         if(r < probs[i]) {

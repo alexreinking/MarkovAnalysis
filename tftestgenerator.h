@@ -5,8 +5,6 @@
 #include "MarkovGenerator.h"
 #include "tfstate.h"
 
-#define RAND_DOUBLE ((double)rand()/double(RAND_MAX+1ul))
-
 class TFTestGenerator : public MarkovGenerator
 {
 public:
